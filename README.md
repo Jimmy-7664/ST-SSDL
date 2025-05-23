@@ -1,6 +1,6 @@
 # <div align="center">How Different from the Past? Spatio-Temporal Time Series Forecasting with Self-Supervised Deviation Learning </div>
 
-# ST-SSDL
+### ST-SSDL
 
 
 * Run following commands to prepare data:
@@ -18,12 +18,12 @@
 
   ```bash
   cd model_STSSDL
-  python train_STSSDL.py --gpu 1 --dataset METRLA
-  python train_STSSDL.py --gpu 1 --dataset PEMSBAY
-  python train_STSSDL.py --gpu 1 --dataset PEMSD7M
-  python train_STSSDL.py --gpu 1 --dataset PEMS04
-  python train_STSSDL.py --gpu 1 --dataset PEMS07
-  python train_STSSDL.py --gpu 1 --dataset PEMS08
+  python train_STSSDL.py --gpu 0 --dataset METRLA
+  python train_STSSDL.py --gpu 0 --dataset PEMSBAY
+  python train_STSSDL.py --gpu 0 --dataset PEMSD7M
+  python train_STSSDL.py --gpu 0 --dataset PEMS04
+  python train_STSSDL.py --gpu 0 --dataset PEMS07
+  python train_STSSDL.py --gpu 0 --dataset PEMS08
   
   ```
 
