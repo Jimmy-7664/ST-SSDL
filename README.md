@@ -28,4 +28,4 @@ An implementation of ST-SSDL under GCRU backbone.
 
   ##  Performance on Spatiotemporal Forecasting Benchmarks
 
-![Main results.](./results.png)
+![Main results.](./result.png)
