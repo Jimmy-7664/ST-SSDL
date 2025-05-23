@@ -123,8 +123,7 @@ class ADCRNN_Decoder(nn.Module):
 class STSSDL(nn.Module):
     def __init__(self, num_nodes=207, input_dim=1, output_dim=1, horizon=12, rnn_units=128, rnn_layers=1, cheb_k=3,
                  ycov_dim=1, prototype_num=20, prototype_dim=64, embed_dim=10, adj_mx=None, cl_decay_steps=2000, 
-                 use_curriculum_learning=True, contra_loss='infonce', diff_max=3.74, diff_min=0, 
-                 use_mask=False, use_STE=False, device="cpu"):
+                 TDAY=288, use_curriculum_learning=True, use_STE=False, device="cpu"):
         super(STSSDL, self).__init__()
         self.num_nodes = num_nodes
         self.input_dim = input_dim
@@ -137,13 +136,9 @@ class STSSDL(nn.Module):
         self.embed_dim = embed_dim
         self.cl_decay_steps = cl_decay_steps
         self.use_curriculum_learning = use_curriculum_learning
-        self.contra_loss = contra_loss
         self.device = device
-        self.diff_min = diff_min
-        self.diff_max = diff_max
-        self.use_mask = use_mask
         self.use_STE = use_STE
-        self.TDAY = 288
+        self.TDAY = TDAY
         
         # prototypes
         self.prototype_num = prototype_num
@@ -157,8 +152,7 @@ class STSSDL(nn.Module):
             self.time_embedding = nn.Parameter(torch.empty(self.TDAY, self.embed_dim))
             nn.init.xavier_uniform_(self.node_embedding)
             nn.init.xavier_uniform_(self.time_embedding)
-            
-        
+
         # encoder
         self.adj_mx = adj_mx
         if self.use_STE:
@@ -166,7 +160,7 @@ class STSSDL(nn.Module):
         else:
             self.encoder = ADCRNN_Encoder(self.num_nodes, self.input_dim, self.rnn_units, self.cheb_k, self.rnn_layers, len(self.adj_mx))
         
-        # deocoder
+        # decoder
         self.decoder_dim = self.rnn_units + self.prototype_dim
         if self.use_STE:
             self.decoder = ADCRNN_Decoder(self.num_nodes, self.rnn_units + self.embed_dim * 2, self.decoder_dim, self.cheb_k, self.rnn_layers, 1)
@@ -187,7 +181,7 @@ class STSSDL(nn.Module):
 
     def construct_prototypes(self):
         prototypes_dict = nn.ParameterDict()
-        prototype=torch.randn(self.prototype_num, self.prototype_dim)
+        prototype = torch.randn(self.prototype_num, self.prototype_dim)
         prototypes_dict['prototypes'] = nn.Parameter(prototype, requires_grad=True)     # (M, d)
         prototypes_dict['Wq'] = nn.Parameter(torch.randn(self.rnn_units, self.prototype_dim), requires_grad=True)    # project to query
         for param in prototypes_dict.values():
@@ -206,10 +200,9 @@ class STSSDL(nn.Module):
             
         return value, query, pos, neg, mask
     
-    def calculate_distance(self, pos, pos_his, use_mask=False, mask=None):
+    def calculate_distance(self, pos, pos_his, mask=None):
         score = torch.sum(torch.abs(pos - pos_his), dim=-1)
         return score, mask
-
             
     def forward(self, x, x_cov, x_his, y_cov, labels=None, batches_seen=None):
         if self.use_STE:
@@ -221,7 +214,7 @@ class STSSDL(nn.Module):
         init_state = self.encoder.init_hidden(x.shape[0])
         h_en, state_en = self.encoder(x, init_state, supports_en) # B, T, N, hidden
         h_t = h_en[:, -1, :, :] # B, N, hidden (last state)    
-        h_att, query, pos, neg, mask = self.query_prototypes(h_t)
+        v_t, q_t, p_t, n_t, mask = self.query_prototypes(h_t)
         
         if self.use_STE:
             x_his = self.input_proj(x_his)  # [B,T,N,1]->[B,T,N,D]
@@ -229,19 +222,19 @@ class STSSDL(nn.Module):
             time_emb = self.time_embedding[(x_cov.squeeze() * self.TDAY).type(torch.LongTensor)]  # [B, T, N, d]
             x_his = torch.cat([x_his, node_emb, time_emb], dim=-1)  # [B, T, N, D+2d]
         h_his_en, state_his_en = self.encoder(x_his, init_state, supports_en) # B, T, N, hidden
-        h_his_t = h_his_en[:, -1, :, :] # B, N, hidden (last state)      
-        h_his_att, query_his, pos_his, neg_his, mask_his = self.query_prototypes(h_his_t)
+        h_a = h_his_en[:, -1, :, :] # B, N, hidden (last state)      
+        v_a, q_a, p_a, n_a, mask_his = self.query_prototypes(h_a)
         
-        latent_dis, _ = self.calculate_distance(query, query_his)
-        prototype_dis, mask_dis = self.calculate_distance(pos, pos_his)
+        latent_dis, _ = self.calculate_distance(q_t, q_a)
+        prototype_dis, mask_dis = self.calculate_distance(p_t, p_a)
         
-        query = torch.stack([query, query_his], dim=0)
-        pos = torch.stack([pos, pos_his], dim=0)
-        neg = torch.stack([neg, neg_his], dim=0)
+        query = torch.stack([q_t, q_a], dim=0)
+        pos = torch.stack([p_t, p_a], dim=0)
+        neg = torch.stack([n_t, n_a], dim=0)
         mask = torch.stack([mask, mask_his], dim=0) if mask is not None else [None, None] 
         
-        h_de = torch.cat([h_t, h_att], dim=-1)
-        h_aug = torch.cat([h_t, h_att, h_his_t, h_his_att], dim=-1) # B, N, D
+        h_de = torch.cat([h_t, v_t], dim=-1)
+        h_aug = torch.cat([h_t, v_t, h_a, v_a], dim=-1) # B, N, D
         
         node_embeddings = self.hypernet(h_aug) # B, N, e
         support = F.softmax(F.relu(torch.einsum('bnc,bmc->bnm', node_embeddings, node_embeddings)), dim=-1) 
@@ -269,7 +262,7 @@ class STSSDL(nn.Module):
                     
         output = torch.stack(out, dim=1)
         
-        return output, h_att, query, pos, neg, mask, latent_dis, prototype_dis, mask_dis
+        return output, query, pos, neg, mask, latent_dis, prototype_dis
 
 def print_params(model):
     # print trainable params

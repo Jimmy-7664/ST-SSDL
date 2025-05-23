@@ -49,8 +49,8 @@ def get_model():
     adjs = [torch.tensor(i).to(device) for i in adj_mx]            
     model = STSSDL(num_nodes=args.num_nodes, input_dim=args.input_dim, output_dim=args.output_dim, horizon=args.horizon, 
                  rnn_units=args.rnn_units, rnn_layers=args.rnn_layers, cheb_k = args.cheb_k, prototype_num=args.prototype_num, 
-                 prototype_dim=args.prototype_dim, embed_dim=args.embed_dim, adj_mx = adjs, cl_decay_steps=args.cl_decay_steps, use_curriculum_learning=args.use_curriculum_learning, 
-                 contra_loss=args.contra_loss, diff_max=diff_max, diff_min=diff_min, use_mask=args.use_mask, use_STE=args.use_STE, device=device).to(device)
+                 prototype_dim=args.prototype_dim, embed_dim=args.embed_dim, adj_mx = adjs, cl_decay_steps=args.cl_decay_steps, 
+                 use_curriculum_learning=args.use_curriculum_learning, use_STE=args.use_STE, device=device).to(device)
     return model
 
 def prepare_x_y(x, y):
@@ -75,12 +75,11 @@ def evaluate(model, mode):
         data_iter =  data[f'{mode}_loader']
         ys_true, ys_pred = [], []
         losses = []
-        diff_num = 0
         for x, y in data_iter:
             x = x.to(device)
             y = y.to(device)
             x, x_cov, x_his, y, y_cov = prepare_x_y(x, y)
-            output, h_att, query, pos, neg, mask, real_dis, latent_dis, mask_dis = model(x, x_cov, x_his, y_cov)
+            output, _, _, _, _, _, _ = model(x, x_cov, x_his, y_cov)
             y_pred = scaler.inverse_transform(output)
             y_true = y
             ys_true.append(y_true)
@@ -125,15 +124,13 @@ def traintest_model():
         start_time = time.time()
         model = model.train()
         data_iter = data['train_loader']
-        losses, mae_losses, contra_losses, detect_losses = [], [], [], []
-        meta_hit_count=np.zeros(shape=(4, args.prototype_num), dtype=np.int64)
-        loss_normal_count, loss_abnormal_count=0, 0
+        losses, mae_losses, contra_losses, deviation_losses = [], [], [], []
         for x, y in data_iter:
             optimizer.zero_grad()
             x = x.to(device)
             y = y.to(device)
             x, x_cov, x_his, y, y_cov = prepare_x_y(x, y)
-            output, h_att, query, pos, neg, mask, query_simi, pos_simi, mask_simi = model(x, x_cov, x_his, y_cov, scaler.transform(y), batches_seen)
+            output, query, pos, neg, mask, query_simi, pos_simi = model(x, x_cov, x_his, y_cov, scaler.transform(y), batches_seen)
             y_pred = scaler.inverse_transform(output)
             y_true = y
 
@@ -147,7 +144,7 @@ def traintest_model():
             losses.append(loss.item())
             mae_losses.append(mae_loss.item())
             contra_losses.append(loss_c.item())
-            detect_losses.append(loss_d.item())
+            deviation_losses.append(loss_d.item())
             losses.append(loss.item())
             batches_seen += 1
             loss.backward()
@@ -159,10 +156,10 @@ def traintest_model():
         train_loss = np.mean(losses)
         train_mae_loss = np.mean(mae_losses) 
         train_contra_loss = np.mean(contra_losses)
-        train_detect_loss = np.mean(detect_losses)
+        train_deviation_loss = np.mean(deviation_losses)
         lr_scheduler.step()
         val_loss, _, _ = evaluate(model, 'val')
-        message = 'Epoch [{}/{}] ({}) train_loss: {:.4f}, train_mae_loss: {:.4f}, train_contra_loss: {:.4f}, train_detect_loss: {:.4f}, val_loss: {:.4f}, lr: {:.6f}, {:.2f}s'.format(epoch_num + 1, args.epochs, batches_seen, train_loss, train_mae_loss, train_contra_loss, train_detect_loss, val_loss, optimizer.param_groups[0]['lr'], (end_time2 - start_time))
+        message = 'Epoch [{}/{}] ({}) train_loss: {:.4f}, train_mae_loss: {:.4f}, train_contra_loss: {:.4f}, train_deviation_loss: {:.4f}, val_loss: {:.4f}, lr: {:.6f}, {:.2f}s'.format(epoch_num + 1, args.epochs, batches_seen, train_loss, train_mae_loss, train_contra_loss, train_deviation_loss, val_loss, optimizer.param_groups[0]['lr'], (end_time2 - start_time))
         logger.info(message)
         
         test_loss, _, _ = evaluate(model, 'test')
@@ -218,11 +215,8 @@ parser.add_argument('--gpu', type=int, default=0, help='which gpu to use')
 parser.add_argument('--seed', type=int, default=100, help='random seed.')
 parser.add_argument('--temp', type=float, default=1.0, help='temperature parameter')
 parser.add_argument('--lamb_c', type=float, default=0.1, help='contra loss lambda') 
-parser.add_argument('--lamb_d', type=float, default=1.0, help='anomaly detection loss lambda') 
+parser.add_argument('--lamb_d', type=float, default=1.0, help='deviation loss lambda')
 parser.add_argument('--contra_loss', type=str, choices=['triplet', 'infonce'], default='triplet', help='whether to triplet or infonce contra loss')
-parser.add_argument('--compact_loss', type=str, choices=['mse', 'rmse', 'mae'], default='mse', help='which method to calculate compact loss')
-parser.add_argument('--detect_loss', type=str, choices=['mse', 'rmse', 'mae'], default='mae', help='which method to calculate detect loss')
-parser.add_argument("--use_mask", type=eval, choices=[True, False], default='False', help="use mask to calculate detect loss")
 parser.add_argument("--use_STE", type=eval, choices=[True, False], default='True', help="use spatio-temporal embedding")
 args = parser.parse_args()
 num_nodes_dict={
@@ -241,7 +235,6 @@ if args.dataset == 'METRLA':
     args.seed=345
     args.lamb_c=0.1
     args.lamb_d=1
-    args.contra_loss="triplet"
 
     
 elif args.dataset == 'PEMSBAY':
@@ -252,7 +245,6 @@ elif args.dataset == 'PEMSBAY':
     args.cl_decay_steps = 8000
     args.steps = [10, 150]
     args.seed=514
-    args.contra_loss="triplet"
     args.lamb_c=0.1
     args.lamb_d=1
 
@@ -261,7 +253,6 @@ elif args.dataset == 'PEMS03':
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
     args.seed=999
-    args.contra_loss="triplet"
     args.patience=30
     args.batch_size=16
     args.lr=0.001
@@ -282,7 +273,6 @@ elif args.dataset == 'PEMS04':
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
     args.seed=999
-    args.contra_loss="triplet"
     args.patience=30
     args.batch_size=16
     args.lr=0.001
@@ -302,8 +292,6 @@ elif args.dataset == 'PEMS07':
     data_path = f'../{args.dataset}/{args.dataset}.npz'
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
-    
-    args.contra_loss="triplet"
     args.patience=20
     args.batch_size=16
     args.lr=0.001
@@ -328,15 +316,12 @@ elif args.dataset == 'PEMS08':
     args.lamb_c=0.1
     args.lamb_d=1
     args.seed=999
-    args.contra_loss="triplet"
     
 elif args.dataset == 'PEMSD7M':
     data_path = f'../{args.dataset}/{args.dataset}.npz'
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
-    
     args.seed=666
-    args.contra_loss="triplet"    
     args.patience=30
     args.batch_size=16
     args.lr=0.001
@@ -408,9 +393,6 @@ scaler = StandardScaler(mean=data['x_train'][..., 0].mean(), std=data['x_train']
 for category in ['train', 'val', 'test']:
     data['x_' + category][..., 0] = scaler.transform(data['x_' + category][..., 0])
     data['x_' + category][..., 2] = scaler.transform(data['x_' + category][..., 2]) # x_his
-
-diff_max = np.max(np.abs(scaler.transform(data['x_train'][..., 0]) - scaler.transform(data['x_train'][..., -1]))) 
-diff_min = 0.
 
 data['train_loader'] = torch.utils.data.DataLoader(
     torch.utils.data.TensorDataset(torch.FloatTensor(data['x_train']), torch.FloatTensor(data['y_train'])),
