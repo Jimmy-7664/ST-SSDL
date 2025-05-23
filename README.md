@@ -1,17 +1,26 @@
 # <div align="center">How Different from the Past? Spatio-Temporal Time Series Forecasting with Self-Supervised Deviation Learning </div>
 
-### ST-SSDL Framework:
+* ### ST-SSDL Framework:
 
 ![Framework](./framework.png)
 
 
-* Install required packages using pip:
+* ### OS
+
+  Linux systems (*e.g.* Ubuntu and CentOS). 
+
+* ### Python
+
+  The code is built based on Python 3.9. You can install required packages using pip:
 
   ```
   pip install -r requirements.txt
   ```
-  
-  
+
+* ### Datasets
+
+  All six datasets are already provided except PEMS-BAY due to the limitation of file size.
+  You can download PEMS-BAY from the public library [BasicTS](https://drive.google.com/drive/folders/14EJVODCU48fGK0FkyeVom_9lETh80Yjp?usp=sharing).
   
 * Run following commands to prepare data:
 
