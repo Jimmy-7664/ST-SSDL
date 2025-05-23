@@ -23,7 +23,9 @@ An implementation of ST-SSDL under GCRU backbone.
   python train_STSSDL.py --gpu 1 --dataset PEMS04
   python train_STSSDL.py --gpu 1 --dataset PEMS07
   python train_STSSDL.py --gpu 1 --dataset PEMS08
-
+  
   ```
 
-  
+  ##  Performance on Spatiotemporal Forecasting Benchmarks
+
+![Main results.](./results.png)
