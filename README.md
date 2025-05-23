@@ -16,7 +16,7 @@ An implementation of ST-SSDL under GCRU backbone.
 * Then train the model with following commands:
 
   ```bash
-  cd model_MDGCRN
+  cd model_STSSDL
   python train_STSSDL.py --gpu 1 --dataset METRLA
   python train_STSSDL.py --gpu 1 --dataset PEMSBAY
   python train_STSSDL.py --gpu 1 --dataset PEMSD7M
