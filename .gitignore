@@ -19,10 +19,6 @@ EXPYTKY/expy-tky_plus_202110.csv.gz
 EXPYTKY/expy-tky_plus_202111.csv.gz
 EXPYTKY/expy-tky_plus_202112.csv.gz
 
-METRLA/*.npz
-PEMSBAY/*.npz
-PEMS04/*.npz
-PEMS08/*.npz
 
 __pycache__/
 logs/
