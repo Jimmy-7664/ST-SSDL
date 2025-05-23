@@ -19,8 +19,7 @@
 
 * ### Datasets
 
-  All six datasets are already provided except PEMS-BAY due to the limitation of file size.
-  You can download PEMS-BAY from the public library [BasicTS](https://drive.google.com/drive/folders/14EJVODCU48fGK0FkyeVom_9lETh80Yjp?usp=sharing).
+  All six datasets are already provided. The PEMS-BAY dataset is provided in zip file due to the limitation of file size. You just need to unzip the file in the PEMSBAY folder.
   
 * Run following commands to prepare data:
 
