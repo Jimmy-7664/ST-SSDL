@@ -2,7 +2,7 @@
 
 ### ST-SSDL Framework:
 
-![Framework](./Framework.png)
+![Framework](./framework.png)
 
 
 * Install required packages using pip:
