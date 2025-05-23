@@ -1,8 +1,18 @@
 # <div align="center">How Different from the Past? Spatio-Temporal Time Series Forecasting with Self-Supervised Deviation Learning </div>
 
-### ST-SSDL
+### ST-SSDL Framework:
+
+![Framework](./Framework.png)
 
 
+* Install required packages using pip:
+
+  ```
+  pip install -r requirements.txt
+  ```
+  
+  
+  
 * Run following commands to prepare data:
 
   ```bash
