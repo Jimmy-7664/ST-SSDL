@@ -237,7 +237,7 @@ if args.dataset == 'METRLA':
     args.num_nodes = 207
     args.use_STE=True
     rand_seed=random.randint(0, 1000000)# 31340
-    args.seed=34876
+    args.seed=rand_seed
     args.lamb_c=0.1
     args.lamb_d=1
     args.steps = [50,70]
@@ -285,7 +285,7 @@ elif args.dataset == 'PEMS04':
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
     rand_seed=random.randint(0, 1000000)# 31340
-    args.seed=422315
+    args.seed=rand_seed
     args.patience=30
     args.batch_size=16
     args.lr=0.001
@@ -310,6 +310,8 @@ elif args.dataset == 'PEMS07':
     data_path = f'../{args.dataset}/{args.dataset}.npz'
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
+    rand_seed=random.randint(0, 1000000)# 31340
+    args.seed=rand_seed
     args.patience=20
     args.batch_size=16
     args.lr=0.001
@@ -324,10 +326,9 @@ elif args.dataset == 'PEMS07':
     args.max_diffusion_step=3
     args.lamb_c=0.01
     args.lamb_d=1
-    args.seed=100
     args.input_embedding_dim=64
-    args.node_embedding_dim=16
-    args.embed_dim=16 #TOD embedding
+    args.node_embedding_dim=25
+    args.embed_dim=25 #TOD embedding
     args.adaptive_embedding_dim=48
 elif args.dataset == 'PEMS08':
     data_path = f'../{args.dataset}/{args.dataset}.npz'
@@ -336,7 +337,7 @@ elif args.dataset == 'PEMS08':
     args.use_STE=True
     args.patience=20
     args.batch_size=16
-    rand_seed=940539
+    rand_seed=random.randint(0, 1000000)# 31340
     args.cl_decay_steps=6000
     args.max_diffusion_step=3
     args.steps=[70, 100]
@@ -357,7 +358,7 @@ elif args.dataset == 'PEMSD7M':
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
     rand_seed=random.randint(0, 1000000)# 31340
-    args.seed=119089
+    args.seed=rand_seed
     # args.seed=666
     args.patience=30
     args.batch_size=16
@@ -375,7 +376,7 @@ elif args.dataset == 'PEMSD7M':
     args.lamb_d=1
     args.input_embedding_dim=32
     args.node_embedding_dim=20
-    args.embed_dim=16 #TOD embedding
+    args.embed_dim=20 #TOD embedding
     args.adaptive_embedding_dim=0
     
 model_name = 'STSSDL'
