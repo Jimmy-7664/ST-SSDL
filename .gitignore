@@ -12,3 +12,4 @@ LA-embedding-Finetune/ME*
 *.zip
 *.npz
 exp-save/
+save-*/
