@@ -31,7 +31,6 @@ class AGCN(nn.Module):
                     x_g.append(torch.einsum("bnm,bmc->bnc", graph, x))
         x_g = torch.cat(x_g, dim=-1)
         x_gconv = torch.einsum('bni,io->bno', x_g, self.weights) + self.bias  # b, N, dim_out
-        # x_gconv = torch.einsum('bni,io->bno', x, self.weights) + self.bias  # b, N, dim_out
         return x_gconv
     
 class AGCRNCell(nn.Module):
@@ -122,7 +121,7 @@ class ADCRNN_Decoder(nn.Module):
 
 class STSSDL(nn.Module):
     def __init__(self, num_nodes=207, input_dim=1, output_dim=1, horizon=12, rnn_units=128, rnn_layers=1, cheb_k=3,
-                 ycov_dim=1, prototype_num=20, prototype_dim=64, embed_dim=10, adj_mx=None, cl_decay_steps=2000, 
+                 ycov_dim=1, prototype_num=20, prototype_dim=64, tod_embed_dim=10, adj_mx=None, cl_decay_steps=2000,
                  TDAY=288, use_curriculum_learning=True, use_STE=False, device="cpu",adaptive_embedding_dim=48,node_embedding_dim=20,input_embedding_dim=128):
         super(STSSDL, self).__init__()
         self.num_nodes = num_nodes
@@ -133,7 +132,7 @@ class STSSDL(nn.Module):
         self.rnn_layers = rnn_layers
         self.cheb_k = cheb_k
         self.ycov_dim = ycov_dim
-        self.embed_dim = embed_dim
+        self.tod_embed_dim = tod_embed_dim
         self.cl_decay_steps = cl_decay_steps
         self.use_curriculum_learning = use_curriculum_learning
         self.device = device
@@ -142,7 +141,7 @@ class STSSDL(nn.Module):
         self.adaptive_embedding_dim=adaptive_embedding_dim
         self.node_embedding_dim = node_embedding_dim
         self.input_embedding_dim=input_embedding_dim
-        self.total_embedding_dim=  self.embed_dim+self.adaptive_embedding_dim+self.node_embedding_dim
+        self.total_embedding_dim=  self.tod_embed_dim+self.adaptive_embedding_dim+self.node_embedding_dim
         # prototypes
         self.prototype_num = prototype_num
         self.prototype_dim = prototype_dim
@@ -156,7 +155,7 @@ class STSSDL(nn.Module):
                 )
             self.input_proj = nn.Linear(self.input_dim, input_embedding_dim)
             self.node_embedding = nn.Parameter(torch.empty(self.num_nodes, self.node_embedding_dim))
-            self.time_embedding = nn.Parameter(torch.empty(self.TDAY, self.embed_dim))
+            self.time_embedding = nn.Parameter(torch.empty(self.TDAY, self.tod_embed_dim))
             nn.init.xavier_uniform_(self.node_embedding)
             nn.init.xavier_uniform_(self.time_embedding)
 
@@ -178,7 +177,7 @@ class STSSDL(nn.Module):
         self.proj = nn.Sequential(nn.Linear(self.decoder_dim, self.output_dim, bias=True))
         
         # graph
-        self.hypernet = nn.Sequential(nn.Linear(self.decoder_dim*2, self.embed_dim, bias=True))
+        self.hypernet = nn.Sequential(nn.Linear(self.decoder_dim*2, self.tod_embed_dim, bias=True))
         
         self.act_dict = {'relu': nn.ReLU(), 'lrelu': nn.LeakyReLU(), 'sigmoid': nn.Sigmoid()}
         self.act_fn = 'sigmoid'  # 'relu' 'lrelu' 'sigmoid'
@@ -193,14 +192,7 @@ class STSSDL(nn.Module):
         prototypes_dict['Wq'] = nn.Parameter(torch.randn(self.rnn_units, self.prototype_dim), requires_grad=True)    # project to query
         for param in prototypes_dict.values():
             nn.init.xavier_normal_(param)
-            
-        # loaded_memory = torch.load('memory.pt')  # shape 必须与 memory_dict['Memory'] 一致
-        # loaded_Wq     = torch.load('Wq.pt')
-        # with torch.no_grad():
-        #     prototypes_dict['Memory'].data.copy_(loaded_memory)
-        #     prototypes_dict['Wq'].data.copy_(loaded_Wq)
-        # torch.save(memory_dict['Memory'], 'memory.pt')
-        # torch.save(memory_dict['Wq'], 'Wq.pt')
+
         return prototypes_dict
     
     def query_prototypes(self, h_t:torch.Tensor):
@@ -225,7 +217,7 @@ class STSSDL(nn.Module):
             features = [x]
 
             tod = x_cov.squeeze()  # [B, T, N]
-            if self.embed_dim>0:
+            if self.tod_embed_dim>0:
                 time_emb = self.time_embedding[(x_cov.squeeze() * self.TDAY).type(torch.LongTensor)]  # [B, T, N, d]
                 features.append(time_emb)
             if self.adaptive_embedding_dim > 0:
@@ -247,7 +239,7 @@ class STSSDL(nn.Module):
                 x_his = self.input_proj(x_his)  # [B,T,N,1]->[B,T,N,D]
             features = [x_his]
             tod = x_cov.squeeze()  # [B, T, N]
-            if self.embed_dim>0:
+            if self.tod_embed_dim>0:
                 time_emb = self.time_embedding[(x_cov.squeeze() * self.TDAY).type(torch.LongTensor)]  # [B, T, N, d]
 
                 features.append(time_emb)
@@ -289,7 +281,7 @@ class STSSDL(nn.Module):
                     go = self.input_proj(go)  # equal to torch.zeros(B,N,D)
                 features = [go]
                 tod = y_cov[:, t, ...].squeeze()  # [B, T, N]
-                if self.embed_dim>0:
+                if self.tod_embed_dim>0:
                     time_emb = self.time_embedding[(tod * self.TDAY).type(torch.LongTensor)]
                     features.append(time_emb)
                 if self.node_embedding_dim>0:

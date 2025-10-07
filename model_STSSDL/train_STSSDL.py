@@ -49,7 +49,7 @@ def get_model():
     adjs = [torch.tensor(i).to(device) for i in adj_mx]            
     model = STSSDL(num_nodes=args.num_nodes, input_dim=args.input_dim, output_dim=args.output_dim, horizon=args.horizon, 
                  rnn_units=args.rnn_units, rnn_layers=args.rnn_layers, cheb_k = args.cheb_k, prototype_num=args.prototype_num, 
-                 prototype_dim=args.prototype_dim, embed_dim=args.embed_dim, adj_mx = adjs, cl_decay_steps=args.cl_decay_steps, 
+                 prototype_dim=args.prototype_dim, tod_embed_dim=args.tod_embed_dim, adj_mx = adjs, cl_decay_steps=args.cl_decay_steps, 
                  use_curriculum_learning=args.use_curriculum_learning, use_STE=args.use_STE, adaptive_embedding_dim=args.adaptive_embedding_dim,node_embedding_dim=args.node_embedding_dim,input_embedding_dim=args.input_embedding_dim,device=device).to(device)
     return model
 
@@ -192,7 +192,7 @@ parser.add_argument('--seq_len', type=int, default=12, help='input sequence leng
 parser.add_argument('--horizon', type=int, default=12, help='output sequence length')
 parser.add_argument('--input_dim', type=int, default=1, help='number of input channel')
 parser.add_argument('--output_dim', type=int, default=1, help='number of output channel')
-parser.add_argument('--embed_dim', type=int, default=10, help='embedding dimension for adaptive graph')
+parser.add_argument('--tod_embed_dim', type=int, default=10, help='embedding dimension for adaptive graph')
 parser.add_argument('--cheb_k', type=int, default=3, help='max diffusion step or Cheb K')
 parser.add_argument('--rnn_layers', type=int, default=1, help='number of rnn layers')
 parser.add_argument('--rnn_units', type=int, default=128, help='number of rnn units')
@@ -243,7 +243,7 @@ if args.dataset == 'METRLA':
     args.steps = [50,70]
     args.input_embedding_dim=3
     args.node_embedding_dim=25
-    args.embed_dim=20 #TOD embedding
+    args.tod_embed_dim=20 #TOD embedding
     args.adaptive_embedding_dim=0
     
 elif args.dataset == 'PEMSBAY':
@@ -258,28 +258,9 @@ elif args.dataset == 'PEMSBAY':
     args.lamb_d=1
     args.input_embedding_dim=10
     args.node_embedding_dim=20
-    args.embed_dim=20 #TOD embedding
+    args.tod_embed_dim=20 #TOD embedding
     args.adaptive_embedding_dim=0
-elif args.dataset == 'PEMS03':
-    data_path = f'../{args.dataset}/{args.dataset}.npz'
-    adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
-    args.num_nodes = num_nodes_dict[args.dataset]
-    args.seed=999
-    args.patience=30
-    args.batch_size=16
-    args.lr=0.001
-    args.steps=[50, 100]
-    args.weight_decay=0
-    args.max_grad_norm=0
-    args.rnn_units=32
-    args.embed_dim=16
-    args.prototype_num=20
-    args.prototype_dim=64
-    args.cl_decay_steps=6000
-    args.max_diffusion_step=3
-    args.lamb_c=0.1
-    args.lamb_d=1
-    
+
 elif args.dataset == 'PEMS04':
     data_path = f'../{args.dataset}/{args.dataset}.npz'
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
@@ -300,7 +281,7 @@ elif args.dataset == 'PEMS04':
     args.max_diffusion_step=3
     args.input_embedding_dim=32
     args.node_embedding_dim=24
-    args.embed_dim=40 #TOD embedding
+    args.tod_embed_dim=40 #TOD embedding
     args.adaptive_embedding_dim=0
     args.use_curriculum_learning=True
     args.lamb_c=0.01
@@ -318,7 +299,6 @@ elif args.dataset == 'PEMS07':
     args.weight_decay=0
     args.max_grad_norm=0
     args.rnn_units=64
-    args.embed_dim=16
     args.prototype_num=20
     args.prototype_dim=64
     args.cl_decay_steps=6000
@@ -328,7 +308,7 @@ elif args.dataset == 'PEMS07':
     args.seed=100
     args.input_embedding_dim=64
     args.node_embedding_dim=16
-    args.embed_dim=16 #TOD embedding
+    args.tod_embed_dim=16 
     args.adaptive_embedding_dim=0
 elif args.dataset == 'PEMS08':
     data_path = f'../{args.dataset}/{args.dataset}.npz'
@@ -350,7 +330,7 @@ elif args.dataset == 'PEMS08':
     args.lamb_d=1
     args.input_embedding_dim=16
     args.node_embedding_dim=20
-    args.embed_dim=20 #TOD embedding
+    args.tod_embed_dim=20 #TOD embedding
     args.adaptive_embedding_dim=0
     
 elif args.dataset == 'PEMSD7M':
@@ -366,7 +346,6 @@ elif args.dataset == 'PEMSD7M':
     args.weight_decay=0
     args.max_grad_norm=0
     args.rnn_units=32
-    args.embed_dim=16
     args.prototype_num=16
     args.prototype_dim=64
     args.cl_decay_steps=4000
@@ -375,7 +354,7 @@ elif args.dataset == 'PEMSD7M':
     args.lamb_d=1
     args.input_embedding_dim=32
     args.node_embedding_dim=20
-    args.embed_dim=16 #TOD embedding
+    args.tod_embed_dim=16 #TOD embedding
     args.adaptive_embedding_dim=0
     
 model_name = 'STSSDL'
