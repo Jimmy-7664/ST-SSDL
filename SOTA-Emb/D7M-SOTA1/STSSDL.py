@@ -220,10 +220,9 @@ class STSSDL(nn.Module):
             
     def forward(self, x, x_cov, x_his, y_cov, labels=None, batches_seen=None):
         if self.use_STE:
-            if self.input_embedding_dim>0:
+            if self.input_embedding_dim!=1:
                 x = self.input_proj(x)  # [B,T,N,1]->[B,T,N,D]
             features = [x]
-
             tod = x_cov.squeeze()  # [B, T, N]
             if self.embed_dim>0:
                 time_emb = self.time_embedding[(x_cov.squeeze() * self.TDAY).type(torch.LongTensor)]  # [B, T, N, d]
@@ -243,7 +242,7 @@ class STSSDL(nn.Module):
         h_t = h_en[:, -1, :, :] # B, N, hidden (last state)    
         v_t, q_t, p_t, n_t, mask = self.query_prototypes(h_t)
         if self.use_STE:
-            if self.input_embedding_dim>0:
+            if self.input_embedding_dim!=1:
                 x_his = self.input_proj(x_his)  # [B,T,N,1]->[B,T,N,D]
             features = [x_his]
             tod = x_cov.squeeze()  # [B, T, N]
@@ -285,7 +284,7 @@ class STSSDL(nn.Module):
         out = []
         for t in range(self.horizon):
             if self.use_STE:
-                if self.input_embedding_dim>0:
+                if self.input_embedding_dim!=1:
                     go = self.input_proj(go)  # equal to torch.zeros(B,N,D)
                 features = [go]
                 tod = y_cov[:, t, ...].squeeze()  # [B, T, N]

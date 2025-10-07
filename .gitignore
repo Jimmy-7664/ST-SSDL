@@ -1,2 +1,15 @@
 __pycache__/
 PEMS-BAY.h5
+save/*
+PEMSBAY/*
+METRLA/*
+PEMS03/*
+PEMS04/*
+PEMS07/*
+PEMS08/*
+LA-embedding-Finetune/ME*
+*.pt
+*.zip
+*.npz
+exp-save/
+save-*/
