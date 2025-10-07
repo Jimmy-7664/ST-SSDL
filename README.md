@@ -1,4 +1,4 @@
-# <div align="center">How Different from the Past? Spatio-Temporal Time Series Forecasting with Self-Supervised Deviation Learning </div>
+# <div align="center">[NeurIPS 2025] How Different from the Past? Spatio-Temporal Time Series Forecasting with Self-Supervised Deviation Learning </div>
 
 * ### ST-SSDL Framework:
 
