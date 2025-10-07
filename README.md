@@ -4,7 +4,8 @@
 
 ![Framework](./framework.png)
 
-
+## Preprint Link 
+[![Arxiv link](https://img.shields.io/static/v1?label=arXiv&message=ST-SSDL&color=red&logo=arxiv)](https://arxiv.org/abs/2510.04908)
 * ### OS
 
   Linux systems (*e.g.* Ubuntu and CentOS). 
