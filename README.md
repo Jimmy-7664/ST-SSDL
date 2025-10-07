@@ -2,7 +2,7 @@
 
 * ### ST-SSDL Framework:
 
-![Framework](./fig2_v2.hpg)
+![Framework](./fig2_v2.jpg)
 
 ## Preprint Link 
 [![Arxiv link](https://img.shields.io/static/v1?label=arXiv&message=ST-SSDL&color=red&logo=arxiv)](https://arxiv.org/abs/2510.04908)
