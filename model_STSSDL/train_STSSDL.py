@@ -292,6 +292,7 @@ elif args.dataset == 'PEMS07':
     data_path = f'../{args.dataset}/{args.dataset}.npz'
     adj_mx_path = f'../{args.dataset}/adj_{args.dataset}_distance.pkl'
     args.num_nodes = num_nodes_dict[args.dataset]
+    rand_seed=random.randint(0, 1000000)# 31340
     args.patience=20
     args.batch_size=16
     args.lr=0.001
@@ -305,7 +306,7 @@ elif args.dataset == 'PEMS07':
     args.max_diffusion_step=3
     args.lamb_c=0.01
     args.lamb_d=1
-    args.seed=100
+    args.seed=rand_seed
     args.input_embedding_dim=64
     args.node_embedding_dim=16
     args.tod_embed_dim=16 
