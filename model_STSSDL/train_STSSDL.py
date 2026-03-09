@@ -141,7 +141,6 @@ def traintest_model():
             loss_d = F.l1_loss(query_simi.detach(), pos_simi)
             loss = mae_loss + args.lamb_c * loss_c + args.lamb_d * loss_d
             
-            losses.append(loss.item())
             mae_losses.append(mae_loss.item())
             contra_losses.append(loss_c.item())
             deviation_losses.append(loss_d.item())
