@@ -219,6 +219,8 @@ class STSSDL(nn.Module):
             tod = x_cov.squeeze()  # [B, T, N]
             if self.tod_embed_dim>0:
                 time_emb = self.time_embedding[(x_cov.squeeze() * self.TDAY).type(torch.LongTensor)]  # [B, T, N, d]
+                if len(time_emb.shape)==3:
+                    time_emb = time_emb.unsqueeze(0)  # [T, N, d] -> [1, T, N, d]
                 features.append(time_emb)
             if self.adaptive_embedding_dim > 0:
                 adp_emb = self.adaptive_embedding.expand(
@@ -241,7 +243,8 @@ class STSSDL(nn.Module):
             tod = x_cov.squeeze()  # [B, T, N]
             if self.tod_embed_dim>0:
                 time_emb = self.time_embedding[(x_cov.squeeze() * self.TDAY).type(torch.LongTensor)]  # [B, T, N, d]
-
+                if len(time_emb.shape)==3:
+                    time_emb = time_emb.unsqueeze(0)  # [T, N, d] -> [1, T, N, d]
                 features.append(time_emb)
             if self.adaptive_embedding_dim > 0:
                 adp_emb = self.adaptive_embedding.expand(
@@ -283,6 +286,8 @@ class STSSDL(nn.Module):
                 tod = y_cov[:, t, ...].squeeze()  # [B, T, N]
                 if self.tod_embed_dim>0:
                     time_emb = self.time_embedding[(tod * self.TDAY).type(torch.LongTensor)]
+                    if len(time_emb.shape)==2:
+                        time_emb = time_emb.unsqueeze(0)  # [T, N, d] -> [1, T, N, d]
                     features.append(time_emb)
                 if self.node_embedding_dim>0:
                     node_emb = self.node_embedding.unsqueeze(0).expand(x.shape[0], -1, -1)  # [B,N,d]
